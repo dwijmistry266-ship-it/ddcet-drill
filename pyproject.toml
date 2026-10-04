@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ddcet-drill"
+version = "0.1.0"
+description = "Terminal practice drills for the DDCET exam (Gujarat diploma-to-degree entrance)"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "Dwij Mistry" }]
+keywords = ["ddcet", "exam", "practice", "quiz", "gujarat"]
+
+[project.scripts]
+ddcet-drill = "ddcet_drill.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+ddcet_drill = ["data/*.json"]
