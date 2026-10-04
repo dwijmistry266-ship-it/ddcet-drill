@@ -1,3 +1,15 @@
+<p align="center">
+  <img src="assets/banner.svg" width="100%" alt="DDCET-DRILL">
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/python-3.10+-00f0ff?style=for-the-badge&logo=python&logoColor=white&labelColor=04060c" alt="python">
+  <img src="https://img.shields.io/badge/license-MIT-ff2a6d?style=for-the-badge&labelColor=04060c" alt="license">
+  <img src="https://img.shields.io/badge/version-0.1.0-b967ff?style=for-the-badge&labelColor=04060c" alt="version">
+</p>
+
+---
+
 # ddcet-drill
 
 > **Terminal practice drills for the DDCET exam** — Gujarat's diploma-to-degree
@@ -48,3 +60,6 @@ and lists every mistake with its explanation, so each attempt teaches.
 ## License
 
 MIT — see [LICENSE](LICENSE).
+
+---
+<p align="center"><sub>// end of transmission _</sub></p>
