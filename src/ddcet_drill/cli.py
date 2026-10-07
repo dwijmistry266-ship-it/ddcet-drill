@@ -36,6 +36,28 @@ def cmd_mock(args):
     return 0
 
 
+def cmd_review(args):
+    bank = load_bank()
+    entries = history.read_history()
+    missed = history.missed_ids(entries)
+    if not missed:
+        print("No mistakes on record. Run `ddcet-drill practice` or `ddcet-drill mock` first.")
+        return 0
+    by_id = {q["id"]: q for q in bank}
+    pool = [by_id[qid] for qid in missed if qid in by_id]
+    pool = filter_questions(pool, subject=args.subject, topic=args.topic)
+    if not pool:
+        print("No recorded mistakes match that filter.")
+        return 1
+    qs = sample(pool, args.n, seed=args.seed) if args.seed is not None else pool[:args.n]
+    print(f"Review: {len(qs)} question(s) you got wrong and haven't gotten right since.")
+    print("Marking: +2 correct, -0.5 wrong, 0 for E (Not attempted).")
+    results = engine.run_practice(qs)
+    history.log_attempt("review", results)
+    engine.print_report(results)
+    return 0
+
+
 def cmd_stats(_args):
     entries = history.read_history()
     if not entries:
@@ -88,6 +110,13 @@ def build_parser():
 
     st = sub.add_parser("stats", help="Topic-wise accuracy from history.")
     st.set_defaults(func=cmd_stats)
+
+    rv = sub.add_parser("review", help="Re-attempt only questions you got wrong.")
+    rv.add_argument("--subject", default=None, help="Filter by subject.")
+    rv.add_argument("--topic", default=None, help="Filter by topic.")
+    rv.add_argument("-n", type=int, default=None, help="Number of questions (default: all open misses).")
+    rv.add_argument("--seed", type=int, default=None, help="Random seed.")
+    rv.set_defaults(func=cmd_review)
 
     sj = sub.add_parser("subjects", help="Show bank coverage and health.")
     sj.set_defaults(func=cmd_subjects)

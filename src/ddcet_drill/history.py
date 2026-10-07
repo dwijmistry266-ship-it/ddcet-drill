@@ -55,3 +55,26 @@ def accuracy_by_topic(entries):
                     c += 1
             stats[key] = (c, a)
     return stats
+
+
+def missed_ids(entries):
+    """Return ids of questions to review, most-recently-missed first.
+
+    A question counts as an open miss if its latest attempted verdict was
+    "wrong". Getting it "correct" later clears it from the review queue.
+    "skipped" verdicts neither add nor clear an entry.
+    """
+    open_misses = []
+    settled = set()
+    for e in reversed(entries):
+        for it in reversed(e["items"]):
+            qid = it["id"]
+            if qid in settled:
+                continue
+            verdict = it["verdict"]
+            if verdict == "skipped":
+                continue
+            settled.add(qid)
+            if verdict == "wrong":
+                open_misses.append(qid)
+    return open_misses

@@ -37,12 +37,15 @@ ddcet-drill mock -n 20 --minutes 30
 # Topic-wise accuracy across all your attempts
 ddcet-drill stats
 
+# Re-attempt only the questions you got wrong (cleared once you get one right)
+ddcet-drill review --subject physics
+
 # What the question bank covers (and its health check)
 ddcet-drill subjects
 ```
 
 Attempts are logged to `~/.ddcet-drill/history.jsonl` (append-only), which
-powers `stats`. Delete the file any time to reset.
+powers `stats` and `review`. Delete the file any time to reset.
 
 ## Question bank
 
