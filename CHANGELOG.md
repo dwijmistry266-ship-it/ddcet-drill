@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+- `--shuffle-options` flag on `practice`, `mock`, and `review`: shuffles each
+  question's option positions and remaps the answer index, so correct letters
+  can't be memorized. Original bank is never mutated; combine with `--seed`
+  for a reproducible session.
+
 ## 0.1.0 — 2026-10-04
 - Initial release: terminal practice drills for the DDCET exam.
 - `practice` mode: untimed, subject/topic filters, instant feedback with explanations.

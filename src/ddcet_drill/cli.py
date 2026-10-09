@@ -4,7 +4,8 @@ import argparse
 
 from . import __version__
 from . import engine, history
-from .questions import filter_questions, load_bank, sample, subjects, validate
+from .questions import (filter_questions, load_bank, sample, shuffle_options,
+                         subjects, validate)
 
 
 def cmd_practice(args):
@@ -14,6 +15,8 @@ def cmd_practice(args):
         print("No questions match that filter. Try `ddcet-drill subjects`.")
         return 1
     qs = sample(pool, args.n, seed=args.seed)
+    if args.shuffle_options:
+        qs = shuffle_options(qs, seed=args.seed)
     print(f"Practice: {len(qs)} questions"
           + (f" [{args.subject}]" if args.subject else "")
           + (f" / {args.topic}" if args.topic else ""))
@@ -27,6 +30,8 @@ def cmd_practice(args):
 def cmd_mock(args):
     bank = load_bank()
     qs = sample(bank, args.n, seed=args.seed)
+    if args.shuffle_options:
+        qs = shuffle_options(qs, seed=args.seed)
     print(f"Mock: {len(qs)} questions, {args.minutes} minutes.")
     print("Subjects intermixed, DDCET style. E = Not attempted (0 marks).")
     input("Press Enter to start the timer...")
@@ -50,6 +55,8 @@ def cmd_review(args):
         print("No recorded mistakes match that filter.")
         return 1
     qs = sample(pool, args.n, seed=args.seed) if args.seed is not None else pool[:args.n]
+    if args.shuffle_options:
+        qs = shuffle_options(qs, seed=args.seed)
     print(f"Review: {len(qs)} question(s) you got wrong and haven't gotten right since.")
     print("Marking: +2 correct, -0.5 wrong, 0 for E (Not attempted).")
     results = engine.run_practice(qs)
@@ -100,12 +107,16 @@ def build_parser():
     pr.add_argument("--topic", default=None, help="Filter by topic.")
     pr.add_argument("-n", type=int, default=10, help="Number of questions.")
     pr.add_argument("--seed", type=int, default=None, help="Random seed.")
+    pr.add_argument("--shuffle-options", action="store_true",
+                    help="Shuffle option positions so letters can't be memorized.")
     pr.set_defaults(func=cmd_practice)
 
     mk = sub.add_parser("mock", help="Timed mock, subjects intermixed.")
     mk.add_argument("-n", type=int, default=20, help="Number of questions.")
     mk.add_argument("--minutes", type=int, default=30, help="Time limit.")
     mk.add_argument("--seed", type=int, default=None, help="Random seed.")
+    mk.add_argument("--shuffle-options", action="store_true",
+                    help="Shuffle option positions so letters can't be memorized.")
     mk.set_defaults(func=cmd_mock)
 
     st = sub.add_parser("stats", help="Topic-wise accuracy from history.")
@@ -116,6 +127,8 @@ def build_parser():
     rv.add_argument("--topic", default=None, help="Filter by topic.")
     rv.add_argument("-n", type=int, default=None, help="Number of questions (default: all open misses).")
     rv.add_argument("--seed", type=int, default=None, help="Random seed.")
+    rv.add_argument("--shuffle-options", action="store_true",
+                    help="Shuffle option positions so letters can't be memorized.")
     rv.set_defaults(func=cmd_review)
 
     sj = sub.add_parser("subjects", help="Show bank coverage and health.")

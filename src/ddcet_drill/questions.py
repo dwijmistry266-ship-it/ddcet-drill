@@ -34,6 +34,25 @@ def sample(bank, n, seed=None):
     return rng.sample(bank, min(n, len(bank)))
 
 
+def shuffle_options(questions, seed=None):
+    """Return copies with each question's options shuffled, answer remapped.
+
+    The correct option text follows its new position, so letter-based
+    scoring (`engine.score_answer`) keeps working unchanged. Original
+    question dicts are NOT modified. With a seed, shuffles are
+    deterministic (one RNG shared across all questions).
+    """
+    rng = random.Random(seed)
+    out = []
+    for q in questions:
+        order = list(range(len(q["options"])))
+        rng.shuffle(order)
+        new_options = [q["options"][i] for i in order]
+        new_answer = order.index(q["answer"])
+        out.append({**q, "options": new_options, "answer": new_answer})
+    return out
+
+
 def validate(bank):
     """Return a list of problems found in the bank (empty = healthy)."""
     problems = []

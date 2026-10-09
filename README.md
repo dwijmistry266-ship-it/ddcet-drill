@@ -40,6 +40,10 @@ ddcet-drill stats
 # Re-attempt only the questions you got wrong (cleared once you get one right)
 ddcet-drill review --subject physics
 
+# Shuffle option positions so you can't memorize answer letters
+# (works on practice, mock and review; add --seed for a reproducible session)
+ddcet-drill practice -n 10 --shuffle-options
+
 # What the question bank covers (and its health check)
 ddcet-drill subjects
 ```
