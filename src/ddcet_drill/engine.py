@@ -57,24 +57,40 @@ def run_mock(questions, minutes):
             print("\nTime's up!")
             break
         print(f"\n--- Q{i}/{len(questions)} ---")
+        t0 = time.time()
         ans = ask(q)
+        secs = time.time() - t0
         pts, verdict = score_answer(q, ans)
-        results.append({"q": q, "ans": ans, "pts": pts, "verdict": verdict})
+        results.append({"q": q, "ans": ans, "pts": pts, "verdict": verdict,
+                        "secs": secs})
     return results
 
 
 def summarize(results):
-    """Return totals and per-subject breakdown for a result list."""
+    """Return totals, per-subject breakdown, and per-topic time stats.
+
+    Per-topic time stats only cover results that carry a "secs" value
+    (i.e. timed runs like mock mode); untimed modes are skipped.
+    """
     total = sum(r["pts"] for r in results)
     counts = {"correct": 0, "wrong": 0, "skipped": 0}
     per_subject = {}
+    per_topic_time = {}
     for r in results:
         counts[r["verdict"]] += 1
         sub = r["q"]["subject"]
         entry = per_subject.setdefault(sub, {"correct": 0, "wrong": 0, "skipped": 0, "pts": 0.0})
         entry[r["verdict"]] += 1
         entry["pts"] += r["pts"]
-    return {"total": total, "counts": counts, "per_subject": per_subject}
+        if r.get("secs") is not None:
+            key = (r["q"]["subject"], r["q"]["topic"])
+            t = per_topic_time.setdefault(key, {"n": 0, "secs": 0.0})
+            t["n"] += 1
+            t["secs"] += r["secs"]
+    for t in per_topic_time.values():
+        t["avg"] = t["secs"] / t["n"]
+    return {"total": total, "counts": counts, "per_subject": per_subject,
+            "per_topic_time": per_topic_time}
 
 
 def print_report(results):
@@ -88,6 +104,12 @@ def print_report(results):
     print("\nPer subject:")
     for sub, e in sorted(s["per_subject"].items()):
         print(f"  {sub:<12} {e['pts']:+.1f}  (C:{e['correct']} W:{e['wrong']} S:{e['skipped']})")
+    if s["per_topic_time"]:
+        print("\nSlowest topics (avg time per question):")
+        slowest = sorted(s["per_topic_time"].items(),
+                         key=lambda kv: kv[1]["avg"], reverse=True)[:5]
+        for (sub, topic), e in slowest:
+            print(f"  {sub}/{topic:<24} {e['avg']:5.1f}s avg ({e['n']} timed)")
     missed = [r for r in results if r["verdict"] == "wrong"]
     if missed:
         print("\nReview your mistakes:")

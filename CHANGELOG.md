@@ -1,6 +1,9 @@
 # Changelog
 
 ## Unreleased
+- Per-question time tracking in `mock` mode: each answer's time is logged to
+  history, the mock report ranks your slowest topics by average time per
+  question, and `stats` shows the same ranking across all timed attempts.
 - `--shuffle-options` flag on `practice`, `mock`, and `review`: shuffles each
   question's option positions and remaps the answer index, so correct letters
   can't be memorized. Original bank is never mutated; combine with `--seed`

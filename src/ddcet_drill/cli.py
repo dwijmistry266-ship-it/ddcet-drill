@@ -74,6 +74,13 @@ def cmd_stats(_args):
     for (sub, topic), (c, a) in sorted(history.accuracy_by_topic(entries).items()):
         pct = f"{100 * c / a:.0f}%" if a else "-"
         print(f"  {sub}/{topic:<28} {c}/{a} correct ({pct})")
+    slowest = sorted(
+        ((k, t / n) for k, (t, n) in history.time_by_topic(entries).items()),
+        key=lambda kv: kv[1], reverse=True)[:5]
+    if slowest:
+        print("\nSlowest topics by avg time/question (timed attempts):")
+        for (sub, topic), avg in slowest:
+            print(f"  {sub}/{topic:<28} {avg:5.1f}s avg")
     return 0
 
 

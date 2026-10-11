@@ -39,7 +39,6 @@ ddcet-drill stats
 
 # Re-attempt only the questions you got wrong (cleared once you get one right)
 ddcet-drill review --subject physics
-
 # Shuffle option positions so you can't memorize answer letters
 # (works on practice, mock and review; add --seed for a reproducible session)
 ddcet-drill practice -n 10 --shuffle-options
@@ -61,8 +60,10 @@ more following the same schema (`id`, `subject`, `topic`, `stem`, `options`
 ## Marking
 
 Matches the DDCET paper: +2 for a correct answer, −0.5 for a wrong one,
-0 for E (Not attempted). The mock report breaks your score down per subject
-and lists every mistake with its explanation, so each attempt teaches.
+0 for E (Not attempted). The mock report breaks your score down per subject,
+lists every mistake with its explanation, and ranks your slowest topics by
+average time per question — so each attempt teaches. `stats` shows the same
+slowest-topics ranking across all timed attempts in your history.
 
 ## License
 

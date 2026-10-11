@@ -8,21 +8,28 @@ HIST_FILE = Path.home() / ".ddcet-drill" / "history.jsonl"
 
 
 def log_attempt(mode, results):
-    """Append one attempt's per-question outcomes. Returns the entry."""
+    """Append one attempt's per-question outcomes. Returns the entry.
+
+    Per-question times ("secs") are logged when the result carries them
+    (timed modes like mock); untimed modes omit the field.
+    """
     HIST_FILE.parent.mkdir(parents=True, exist_ok=True)
+    items = []
+    for r in results:
+        item = {
+            "id": r["q"]["id"],
+            "subject": r["q"]["subject"],
+            "topic": r["q"]["topic"],
+            "verdict": r["verdict"],
+            "pts": r["pts"],
+        }
+        if r.get("secs") is not None:
+            item["secs"] = round(r["secs"], 1)
+        items.append(item)
     entry = {
         "ts": int(time.time()),
         "mode": mode,
-        "items": [
-            {
-                "id": r["q"]["id"],
-                "subject": r["q"]["subject"],
-                "topic": r["q"]["topic"],
-                "verdict": r["verdict"],
-                "pts": r["pts"],
-            }
-            for r in results
-        ],
+        "items": items,
     }
     with HIST_FILE.open("a", encoding="utf-8") as f:
         f.write(json.dumps(entry) + "\n")
@@ -54,6 +61,24 @@ def accuracy_by_topic(entries):
                 if it["verdict"] == "correct":
                     c += 1
             stats[key] = (c, a)
+    return stats
+
+
+def time_by_topic(entries):
+    """Return {(subject, topic): (total_secs, timed_attempts)} across entries.
+
+    Only entries logged by timed modes carry "secs"; older and untimed
+    entries are skipped.
+    """
+    stats = {}
+    for e in entries:
+        for it in e["items"]:
+            secs = it.get("secs")
+            if secs is None:
+                continue
+            key = (it["subject"], it["topic"])
+            t, n = stats.get(key, (0.0, 0))
+            stats[key] = (t + secs, n + 1)
     return stats
 
 
