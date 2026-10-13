@@ -1,10 +1,18 @@
 """Quiz engine: asking, DDCET-style scoring, practice and mock modes."""
 
+import textwrap
 import time
 
 LETTERS = "ABCDE"
 MARKS_CORRECT = 2.0
 MARKS_WRONG = -0.5
+
+
+def present_passage(passage):
+    """Print the passage title and wrapped text before its linked questions."""
+    print(f"\n===== {passage['title']} =====")
+    print(textwrap.fill(passage["passage"], width=76))
+    print("=" * (len(passage["title"]) + 11))
 
 
 def ask(q):

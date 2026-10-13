@@ -1,11 +1,14 @@
 """Command-line interface for ddcet-drill."""
 
 import argparse
+import random
 
 from . import __version__
 from . import engine, history
-from .questions import (filter_questions, load_bank, sample, shuffle_options,
-                         subjects, validate)
+from .questions import (filter_questions, load_bank, load_passages,
+                        passage_questions, question_index, sample,
+                        shuffle_options, subjects, validate,
+                        validate_passages)
 
 
 def cmd_practice(args):
@@ -41,6 +44,34 @@ def cmd_mock(args):
     return 0
 
 
+def cmd_passage(args):
+    passages = load_passages()
+    if not passages:
+        print("No passages in the bank yet.")
+        return 1
+    if args.id:
+        match = [p for p in passages if p["id"] == args.id]
+        if not match:
+            print(f"No passage {args.id!r}. Available: "
+                  + ", ".join(p["id"] for p in passages))
+            return 1
+        passage = match[0]
+    else:
+        passage = random.Random(args.seed).choice(passages)
+    qs = passage_questions(passage)
+    if args.shuffle_options:
+        qs = shuffle_options(qs, seed=args.seed)
+    print(f"Passage: {passage['title']} "
+          f"({len(qs)} linked questions) [{passage['subject']}/{passage['topic']}]")
+    engine.present_passage(passage)
+    print("\nAnswer the questions below. The passage stays on screen in your "
+          "scrollback; marking is +2 / -0.5 / E as usual.")
+    results = engine.run_practice(qs)
+    history.log_attempt("passage", results)
+    engine.print_report(results)
+    return 0
+
+
 def cmd_review(args):
     bank = load_bank()
     entries = history.read_history()
@@ -48,7 +79,7 @@ def cmd_review(args):
     if not missed:
         print("No mistakes on record. Run `ddcet-drill practice` or `ddcet-drill mock` first.")
         return 0
-    by_id = {q["id"]: q for q in bank}
+    by_id = question_index(bank)
     pool = [by_id[qid] for qid in missed if qid in by_id]
     pool = filter_questions(pool, subject=args.subject, topic=args.topic)
     if not pool:
@@ -91,13 +122,21 @@ def cmd_subjects(_args):
         topics = sorted({q["topic"] for q in bank if q["subject"] == sub})
         n = sum(1 for q in bank if q["subject"] == sub)
         print(f"  {sub:<12} {n:>3} questions  topics: {', '.join(topics)}")
-    problems = validate(bank)
+    passages = load_passages()
+    linked = sum(len(p["questions"]) for p in passages)
+    print(f"\nPassages: {len(passages)} ({linked} linked reading-comprehension "
+          f"questions):")
+    for p in passages:
+        print(f"  {p['id']:<10} {p['title']} — {len(p['questions'])} questions")
+    problems = validate(bank) + validate_passages(
+        passages, bank_ids=[q["id"] for q in bank])
     if problems:
         print("\nBank problems:")
         for p in problems:
             print(f"  ! {p}")
         return 1
-    print(f"\nTotal: {len(bank)} questions, bank healthy.")
+    print(f"\nTotal: {len(bank)} questions + {linked} passage questions, "
+          "bank healthy.")
     return 0
 
 
@@ -137,6 +176,15 @@ def build_parser():
     rv.add_argument("--shuffle-options", action="store_true",
                     help="Shuffle option positions so letters can't be memorized.")
     rv.set_defaults(func=cmd_review)
+
+    ps = sub.add_parser("passage", help="Read a passage, answer its linked questions.")
+    ps.add_argument("--id", default=None,
+                    help="Passage id (default: pick one at random).")
+    ps.add_argument("--seed", type=int, default=None,
+                    help="Random seed (also picks the passage reproducibly).")
+    ps.add_argument("--shuffle-options", action="store_true",
+                    help="Shuffle option positions so letters can't be memorized.")
+    ps.set_defaults(func=cmd_passage)
 
     sj = sub.add_parser("subjects", help="Show bank coverage and health.")
     sj.set_defaults(func=cmd_subjects)

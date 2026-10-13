@@ -39,6 +39,9 @@ ddcet-drill stats
 
 # Re-attempt only the questions you got wrong (cleared once you get one right)
 ddcet-drill review --subject physics
+
+# Reading comprehension: read a passage, answer its linked questions
+ddcet-drill passage            # pick a random passage (--id DR-P01 for a specific one)
 # Shuffle option positions so you can't memorize answer letters
 # (works on practice, mock and review; add --seed for a reproducible session)
 ddcet-drill practice -n 10 --shuffle-options
@@ -49,6 +52,18 @@ ddcet-drill subjects
 
 Attempts are logged to `~/.ddcet-drill/history.jsonl` (append-only), which
 powers `stats` and `review`. Delete the file any time to reset.
+
+## Reading comprehension
+
+`ddcet-drill passage` prints a passage (e.g. `DR-P01`, "The Waggle Dance"),
+then asks its linked questions with the usual +2 / −0.5 / E marking. Use
+`--id` to pick a specific passage or `--seed` for a reproducible pick;
+`--shuffle-options` works here too. Passages live in
+`src/ddcet_drill/data/passages.json` — add more following the same schema
+(`id`, `subject`, `topic`, `title`, `passage`, `questions` with the same
+fields as bank questions but no `subject`/`topic`, which are inherited).
+Attempts are logged under mode `passage`, so `stats` and `review` cover
+passage questions automatically.
 
 ## Question bank
 

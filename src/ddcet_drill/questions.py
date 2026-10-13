@@ -53,6 +53,83 @@ def shuffle_options(questions, seed=None):
     return out
 
 
+def load_passages():
+    """Load the reading-comprehension passages as a list of dicts.
+
+    Each passage carries id, subject, topic, title, passage text, and a
+    list of linked questions (each without subject/topic — those are
+    inherited from the passage via passage_questions()).
+    """
+    with resources.files("ddcet_drill").joinpath("data/passages.json").open(
+        "r", encoding="utf-8"
+    ) as f:
+        return json.load(f)
+
+
+def passage_questions(passage):
+    """Flatten one passage's linked questions into standalone question dicts.
+
+    Subject and topic are inherited from the passage; passage id and
+    title are attached so the engine, history log, and review queue keep
+    working unchanged. The passage dict is NOT modified.
+    """
+    out = []
+    for q in passage["questions"]:
+        flat = dict(q)
+        flat.setdefault("subject", passage["subject"])
+        flat.setdefault("topic", passage["topic"])
+        flat["passage_id"] = passage["id"]
+        flat["passage_title"] = passage.get("title", "")
+        out.append(flat)
+    return out
+
+
+def question_index(bank=None):
+    """Map every question id (bank + passage-linked) to its question dict."""
+    bank = load_bank() if bank is None else bank
+    index = {q["id"]: q for q in bank}
+    for p in load_passages():
+        for q in passage_questions(p):
+            index[q["id"]] = q
+    return index
+
+
+def validate_passages(passages, bank_ids=()):
+    """Return a list of problems found in the passages (empty = healthy).
+
+    Checks required fields, 4 options per linked question, answer index
+    range, and id uniqueness across passages, linked questions, and the
+    supplied bank ids.
+    """
+    problems = []
+    seen = set(bank_ids)
+    for p in passages:
+        tag = p.get("id", "passage-?")
+        for field in ("id", "subject", "topic", "title", "passage", "questions"):
+            if field not in p:
+                problems.append(f"{tag}: missing field '{field}'")
+        if p.get("id") in seen:
+            problems.append(f"{tag}: duplicate id")
+        seen.add(p.get("id"))
+        for i, q in enumerate(p.get("questions", [])):
+            qtag = q.get("id", f"{tag}-q{i}")
+            for field in ("id", "stem", "options", "answer", "explanation"):
+                if field not in q:
+                    problems.append(f"{qtag}: missing field '{field}'")
+            if q.get("id") in seen:
+                problems.append(f"{qtag}: duplicate id")
+            seen.add(q.get("id"))
+            opts = q.get("options", [])
+            if len(opts) != 4:
+                problems.append(f"{qtag}: expected 4 options, got {len(opts)}")
+            ans = q.get("answer")
+            if not isinstance(ans, int) or not 0 <= ans <= 3:
+                problems.append(f"{qtag}: answer index out of range: {ans!r}")
+        if not p.get("questions"):
+            problems.append(f"{tag}: passage has no linked questions")
+    return problems
+
+
 def validate(bank):
     """Return a list of problems found in the bank (empty = healthy)."""
     problems = []
