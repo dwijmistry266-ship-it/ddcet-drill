@@ -5,10 +5,10 @@ import random
 
 from . import __version__
 from . import engine, history
-from .questions import (filter_questions, load_bank, load_passages,
-                        passage_questions, question_index, sample,
-                        shuffle_options, subjects, validate,
-                        validate_passages)
+from .questions import (adaptive_sample, filter_questions,
+                        load_bank, load_passages, passage_questions,
+                        question_index, sample, shuffle_options, subjects,
+                        validate, validate_passages)
 
 
 def cmd_practice(args):
@@ -72,6 +72,27 @@ def cmd_passage(args):
     return 0
 
 
+def cmd_adapt(args):
+    bank = load_bank()
+    entries = history.read_history()
+    qs = adaptive_sample(bank, args.n, entries, seed=args.seed)
+    if not qs:
+        print("No questions in the bank.")
+        return 1
+    if args.shuffle_options:
+        qs = shuffle_options(qs, seed=args.seed)
+    print(f"Adapt: {len(qs)} questions, weighted toward your weak topics.")
+    if not entries:
+        print("No history yet — serving a discovery mix across all difficulties.")
+    else:
+        print("The difficulty pool grows as your overall accuracy improves.")
+    print("Marking: +2 correct, -0.5 wrong, 0 for E (Not attempted).")
+    results = engine.run_practice(qs)
+    history.log_attempt("adapt", results)
+    engine.print_report(results)
+    return 0
+
+
 def cmd_review(args):
     bank = load_bank()
     entries = history.read_history()
@@ -121,7 +142,12 @@ def cmd_subjects(_args):
     for sub in subjects(bank):
         topics = sorted({q["topic"] for q in bank if q["subject"] == sub})
         n = sum(1 for q in bank if q["subject"] == sub)
-        print(f"  {sub:<12} {n:>3} questions  topics: {', '.join(topics)}")
+        diffs = {d: sum(1 for q in bank
+                        if q["subject"] == sub and q.get("difficulty") == d)
+                 for d in ("easy", "medium", "hard")}
+        print(f"  {sub:<12} {n:>3} questions  "
+              f"easy:{diffs['easy']} medium:{diffs['medium']} hard:{diffs['hard']}  "
+              f"topics: {', '.join(topics)}")
     passages = load_passages()
     linked = sum(len(p["questions"]) for p in passages)
     print(f"\nPassages: {len(passages)} ({linked} linked reading-comprehension "
@@ -164,6 +190,13 @@ def build_parser():
     mk.add_argument("--shuffle-options", action="store_true",
                     help="Shuffle option positions so letters can't be memorized.")
     mk.set_defaults(func=cmd_mock)
+
+    ad = sub.add_parser("adapt", help="Adaptive drill: more of what you miss.")
+    ad.add_argument("-n", type=int, default=10, help="Number of questions.")
+    ad.add_argument("--seed", type=int, default=None, help="Random seed.")
+    ad.add_argument("--shuffle-options", action="store_true",
+                    help="Shuffle option positions so letters can't be memorized.")
+    ad.set_defaults(func=cmd_adapt)
 
     st = sub.add_parser("stats", help="Topic-wise accuracy from history.")
     st.set_defaults(func=cmd_stats)

@@ -4,6 +4,10 @@ import json
 import random
 from importlib import resources
 
+from .history import accuracy_by_topic
+
+DIFFICULTIES = ("easy", "medium", "hard")
+
 
 def load_bank():
     """Load the full question bank as a list of dicts."""
@@ -18,13 +22,14 @@ def subjects(bank):
     return sorted({q["subject"] for q in bank})
 
 
-def filter_questions(bank, subject=None, topic=None):
-    """Return questions matching subject and/or topic (None = no filter)."""
+def filter_questions(bank, subject=None, topic=None, difficulty=None):
+    """Return questions matching subject/topic/difficulty (None = no filter)."""
     return [
         q
         for q in bank
         if (subject is None or q["subject"] == subject)
         and (topic is None or q["topic"] == topic)
+        and (difficulty is None or q.get("difficulty") == difficulty)
     ]
 
 
@@ -32,6 +37,52 @@ def sample(bank, n, seed=None):
     """Return up to n randomly sampled questions (stable with seed)."""
     rng = random.Random(seed)
     return rng.sample(bank, min(n, len(bank)))
+
+
+def adaptive_sample(bank, n, entries, seed=None):
+    """Weighted sample biased toward topics the user gets wrong.
+
+    Each question's weight is ``0.25 + 1.75 * miss_rate(topic)`` where the
+    miss rate comes from history accuracy (skips excluded); topics never
+    attempted get a neutral 0.5 so new ground is still covered. The
+    difficulty pool also adapts to overall accuracy: below 50% serves easy
+    only, 50–80% serves easy+medium, above 80% serves medium+hard; with no
+    history every difficulty is served. Deterministic with a seed. Returns
+    up to n questions, never mutates the bank.
+    """
+    rng = random.Random(seed)
+    acc = accuracy_by_topic(entries)
+    total_c = sum(c for c, _ in acc.values())
+    total_a = sum(a for _, a in acc.values())
+    if total_a == 0:
+        pool = list(bank)
+    else:
+        overall = total_c / total_a
+        if overall < 0.5:
+            allowed = {"easy"}
+        elif overall <= 0.8:
+            allowed = {"easy", "medium"}
+        else:
+            allowed = {"medium", "hard"}
+        pool = [q for q in bank if q.get("difficulty") in allowed] or list(bank)
+
+    def miss_rate(q):
+        c, a = acc.get((q["subject"], q["topic"]), (0, 0))
+        return 1.0 - c / a if a else 0.5
+
+    weights = [0.25 + 1.75 * miss_rate(q) for q in pool]
+    chosen = []
+    remaining = list(range(len(pool)))
+    for _ in range(min(n, len(pool))):
+        total = sum(weights[i] for i in remaining)
+        r = rng.random() * total
+        for i in remaining:
+            r -= weights[i]
+            if r <= 0:
+                chosen.append(pool[i])
+                remaining.remove(i)
+                break
+    return chosen
 
 
 def shuffle_options(questions, seed=None):
@@ -113,12 +164,14 @@ def validate_passages(passages, bank_ids=()):
         seen.add(p.get("id"))
         for i, q in enumerate(p.get("questions", [])):
             qtag = q.get("id", f"{tag}-q{i}")
-            for field in ("id", "stem", "options", "answer", "explanation"):
+            for field in ("id", "stem", "options", "answer", "explanation", "difficulty"):
                 if field not in q:
                     problems.append(f"{qtag}: missing field '{field}'")
             if q.get("id") in seen:
                 problems.append(f"{qtag}: duplicate id")
             seen.add(q.get("id"))
+            if q.get("difficulty") not in DIFFICULTIES:
+                problems.append(f"{qtag}: bad difficulty {q.get('difficulty')!r}")
             opts = q.get("options", [])
             if len(opts) != 4:
                 problems.append(f"{qtag}: expected 4 options, got {len(opts)}")
@@ -136,9 +189,11 @@ def validate(bank):
     seen = set()
     for i, q in enumerate(bank):
         tag = q.get("id", f"index-{i}")
-        for field in ("id", "subject", "topic", "stem", "options", "answer", "explanation"):
+        for field in ("id", "subject", "topic", "difficulty", "stem", "options", "answer", "explanation"):
             if field not in q:
                 problems.append(f"{tag}: missing field '{field}'")
+        if q.get("difficulty") not in DIFFICULTIES:
+            problems.append(f"{tag}: bad difficulty {q.get('difficulty')!r}")
         if q.get("id") in seen:
             problems.append(f"{tag}: duplicate id")
         seen.add(q.get("id"))

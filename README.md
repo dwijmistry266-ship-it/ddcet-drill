@@ -40,6 +40,10 @@ ddcet-drill stats
 # Re-attempt only the questions you got wrong (cleared once you get one right)
 ddcet-drill review --subject physics
 
+# Adaptive drill: serves more of the topics you miss, and the difficulty
+# pool grows as your overall accuracy improves (add --seed for reproducibility)
+ddcet-drill adapt -n 10
+
 # Reading comprehension: read a passage, answer its linked questions
 ddcet-drill passage            # pick a random passage (--id DR-P01 for a specific one)
 # Shuffle option positions so you can't memorize answer letters
@@ -51,7 +55,7 @@ ddcet-drill subjects
 ```
 
 Attempts are logged to `~/.ddcet-drill/history.jsonl` (append-only), which
-powers `stats` and `review`. Delete the file any time to reset.
+powers `stats`, `review`, and `adapt`. Delete the file any time to reset.
 
 ## Reading comprehension
 
@@ -64,6 +68,18 @@ then asks its linked questions with the usual +2 / −0.5 / E marking. Use
 fields as bank questions but no `subject`/`topic`, which are inherited).
 Attempts are logged under mode `passage`, so `stats` and `review` cover
 passage questions automatically.
+
+## Adaptive drill
+
+`ddcet-drill adapt` builds each session from your history: topics you get
+wrong are served with higher probability (topics never attempted get a
+neutral weight so new ground is still covered), and the difficulty pool
+adapts to your overall accuracy — below 50% serves easy questions only,
+50–80% serves easy+medium, above 80% serves medium+hard. With no history
+yet it serves a discovery mix across all difficulties. Every bank question
+carries a `difficulty` tag (`easy` / `medium` / `hard`, also shown in the
+question prompt and in `ddcet-drill subjects`); attempts are logged under
+mode `adapt`.
 
 ## Question bank
 

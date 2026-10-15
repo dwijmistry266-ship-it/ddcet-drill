@@ -1,6 +1,15 @@
 # Changelog
 
 ## Unreleased
+- Difficulty tags + adaptive drill: every bank question (74) and passage
+  question (5) now carries a `difficulty` tag (`easy`/`medium`/`hard`),
+  required and validated by `validate`/`validate_passages`; the new `adapt`
+  command samples questions weighted toward the topics you get wrong (neutral
+  weight for never-attempted topics) and adapts the difficulty pool to your
+  overall accuracy (<50% easy only, 50–80% easy+medium, >80% medium+hard;
+  discovery mix with no history). Difficulty is shown in the question prompt
+  and broken down per subject in `subjects`; attempts log under mode `adapt`.
+  10 new tests in `tests/test_adapt.py`.
 - Reading-comprehension support: new `passage` command prints a passage and
   asks its N linked questions (`--id` to pick one, `--seed` for a reproducible
   pick, `--shuffle-options` supported). Passages live in

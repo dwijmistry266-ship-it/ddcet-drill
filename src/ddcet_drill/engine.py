@@ -17,7 +17,8 @@ def present_passage(passage):
 
 def ask(q):
     """Present one question, return the chosen letter (A-E)."""
-    print(f"\n[{q['subject']} / {q['topic']}] {q['stem']}")
+    diff = f" · {q['difficulty']}" if q.get("difficulty") else ""
+    print(f"\n[{q['subject']} / {q['topic']}{diff}] {q['stem']}")
     for i, opt in enumerate(q["options"]):
         print(f"  {LETTERS[i]}) {opt}")
     print("  E) Not attempted")
