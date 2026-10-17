@@ -1,6 +1,11 @@
 # Changelog
 
 ## Unreleased
+- CSV export for `stats`: `ddcet-drill stats --csv FILE` writes one row per
+  (subject, topic) with `subject, topic, correct, attempted, accuracy_pct,
+  avg_secs` so progress can be tracked in a spreadsheet. Timed topics carry
+  their average seconds per question; untimed topics leave `avg_secs` empty.
+  7 new tests in `tests/test_stats.py`.
 - Difficulty tags + adaptive drill: every bank question (74) and passage
   question (5) now carries a `difficulty` tag (`easy`/`medium`/`hard`),
   required and validated by `validate`/`validate_passages`; the new `adapt`

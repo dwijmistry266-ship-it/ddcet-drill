@@ -1,7 +1,9 @@
 """Command-line interface for ddcet-drill."""
 
 import argparse
+import csv
 import random
+from pathlib import Path
 
 from . import __version__
 from . import engine, history
@@ -117,10 +119,50 @@ def cmd_review(args):
     return 0
 
 
-def cmd_stats(_args):
+STATS_CSV_FIELDS = ("subject", "topic", "correct", "attempted",
+                    "accuracy_pct", "avg_secs")
+
+
+def stats_csv_rows(entries):
+    """Return one dict per (subject, topic) for the stats CSV export.
+
+    `accuracy_pct` is an integer percent ("" when nothing was attempted);
+    `avg_secs` is the average seconds per question over timed attempts
+    ("" when the topic has no timed data).
+    """
+    acc = history.accuracy_by_topic(entries)
+    times = history.time_by_topic(entries)
+    rows = []
+    for (sub, topic), (c, a) in sorted(acc.items()):
+        t, n = times.get((sub, topic), (0.0, 0))
+        rows.append({
+            "subject": sub,
+            "topic": topic,
+            "correct": c,
+            "attempted": a,
+            "accuracy_pct": round(100 * c / a) if a else "",
+            "avg_secs": round(t / n, 1) if n else "",
+        })
+    return rows
+
+
+def write_stats_csv(path, rows):
+    """Write stats rows to a CSV file with the standard header."""
+    with Path(path).open("w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=STATS_CSV_FIELDS)
+        writer.writeheader()
+        writer.writerows(rows)
+
+
+def cmd_stats(args):
     entries = history.read_history()
     if not entries:
         print("No attempts logged yet. Run `ddcet-drill practice` first.")
+        return 0
+    if args.csv:
+        rows = stats_csv_rows(entries)
+        write_stats_csv(args.csv, rows)
+        print(f"Wrote {len(rows)} topic row(s) to {args.csv}")
         return 0
     print(f"Attempts logged: {len(entries)}")
     for (sub, topic), (c, a) in sorted(history.accuracy_by_topic(entries).items()):
@@ -199,6 +241,9 @@ def build_parser():
     ad.set_defaults(func=cmd_adapt)
 
     st = sub.add_parser("stats", help="Topic-wise accuracy from history.")
+    st.add_argument("--csv", default=None, metavar="FILE",
+                    help="Write topic-wise stats to a CSV file instead of "
+                         "printing them.")
     st.set_defaults(func=cmd_stats)
 
     rv = sub.add_parser("review", help="Re-attempt only questions you got wrong.")
