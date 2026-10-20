@@ -40,6 +40,9 @@ ddcet-drill stats
 # accuracy_pct, avg_secs) for tracking in a spreadsheet
 ddcet-drill stats --csv progress.csv
 
+# Practice streak: days practiced this week, plus current and best streaks
+ddcet-drill streak
+
 # Re-attempt only the questions you got wrong (cleared once you get one right)
 ddcet-drill review --subject physics
 

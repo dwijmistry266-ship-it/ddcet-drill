@@ -2,6 +2,7 @@
 
 import json
 import time
+from datetime import date, datetime, timedelta
 from pathlib import Path
 
 HIST_FILE = Path.home() / ".ddcet-drill" / "history.jsonl"
@@ -80,6 +81,58 @@ def time_by_topic(entries):
             t, n = stats.get(key, (0.0, 0))
             stats[key] = (t + secs, n + 1)
     return stats
+
+
+def practice_days(entries):
+    """Return the set of local dates on which at least one attempt was logged.
+
+    Multiple attempts on the same day collapse to one date; entries without
+    a timestamp are ignored.
+    """
+    days = set()
+    for e in entries:
+        ts = e.get("ts")
+        if ts is None:
+            continue
+        days.add(datetime.fromtimestamp(ts).date())
+    return days
+
+
+def current_streak(days, today=None):
+    """Length of the consecutive-day practice streak ending at `today`.
+
+    If `today` itself has no practice yet, the streak counts through
+    yesterday — a streak isn't dead just because today's session hasn't
+    happened yet. Returns 0 when the most recent practice day is older
+    than yesterday.
+    """
+    if today is None:
+        today = date.today()
+    days = set(days)
+    anchor = today if today in days else today - timedelta(days=1)
+    streak = 0
+    while anchor - timedelta(days=streak) in days:
+        streak += 1
+    return streak
+
+
+def longest_streak(days):
+    """Length of the longest run of consecutive practice days (0 if none)."""
+    days = set(days)
+    best = 0
+    for d in days:
+        if d - timedelta(days=1) not in days:  # start of a run
+            run = 1
+            while d + timedelta(days=run) in days:
+                run += 1
+            best = max(best, run)
+    return best
+
+
+def week_of(d):
+    """Return the Monday..Sunday list of 7 dates containing date `d`."""
+    monday = d - timedelta(days=d.weekday())
+    return [monday + timedelta(days=i) for i in range(7)]
 
 
 def missed_ids(entries):

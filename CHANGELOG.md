@@ -1,6 +1,11 @@
 # Changelog
 
 ## Unreleased
+- `streak` command: shows days practiced this week (Mon–Sun weekly grid), the
+  current consecutive-day streak (survives the day until you miss one — it
+  isn't zeroed at midnight before you practice), and the best streak so far.
+  Backed by `history.practice_days()`, `current_streak()`, `longest_streak()`
+  and `week_of()`; 10 new tests in `tests/test_streak.py`. README usage added.
 - CSV export for `stats`: `ddcet-drill stats --csv FILE` writes one row per
   (subject, topic) with `subject, topic, correct, attempted, accuracy_pct,
   avg_secs` so progress can be tracked in a spreadsheet. Timed topics carry

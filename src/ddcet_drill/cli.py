@@ -3,6 +3,7 @@
 import argparse
 import csv
 import random
+from datetime import date
 from pathlib import Path
 
 from . import __version__
@@ -178,6 +179,27 @@ def cmd_stats(args):
     return 0
 
 
+def cmd_streak(_args):
+    entries = history.read_history()
+    days = history.practice_days(entries)
+    if not days:
+        print("No attempts logged yet. Run `ddcet-drill practice` first.")
+        return 0
+    today = date.today()
+    week = history.week_of(today)
+    practiced = set(week) & days
+    n = len(practiced)
+    print(f"This week ({week[0]:%a %d %b} – {week[6]:%a %d %b}): "
+          f"{n} day{'s' if n != 1 else ''} practiced")
+    print("  " + " ".join(f"{d:%a}"[:2] for d in week))
+    print("  " + " ".join(" ●" if d in days else " ○" for d in week))
+    cur = history.current_streak(days, today)
+    best = history.longest_streak(days)
+    print(f"Current streak: {cur} day{'s' if cur != 1 else ''}  |  "
+          f"Best streak: {best} day{'s' if best != 1 else ''}")
+    return 0
+
+
 def cmd_subjects(_args):
     bank = load_bank()
     print("Question bank coverage:")
@@ -266,6 +288,9 @@ def build_parser():
 
     sj = sub.add_parser("subjects", help="Show bank coverage and health.")
     sj.set_defaults(func=cmd_subjects)
+
+    sk = sub.add_parser("streak", help="Days practiced this week + streak.")
+    sk.set_defaults(func=cmd_streak)
     return p
 
 
