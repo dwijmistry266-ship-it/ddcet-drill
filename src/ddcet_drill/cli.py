@@ -296,4 +296,12 @@ def build_parser():
 
 def main():
     args = build_parser().parse_args()
-    raise SystemExit(args.func(args))
+    try:
+        raise SystemExit(args.func(args))
+    except KeyboardInterrupt:
+        # Ctrl+C during a session: exit quietly with the conventional
+        # 130 (128 + SIGINT) instead of dumping a traceback. The
+        # interrupted session never reaches history.log_attempt, so there
+        # is no partial entry to clean up.
+        print("\nInterrupted. If a session was in progress, it was not logged.")
+        raise SystemExit(130)

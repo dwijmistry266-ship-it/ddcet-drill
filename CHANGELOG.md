@@ -1,6 +1,11 @@
 # Changelog
 
 ## Unreleased
+- Graceful Ctrl+C handling: pressing Ctrl+C during a session now exits with
+  the conventional code 130 and a one-line message ("Interrupted. If a
+  session was in progress, it was not logged.") instead of dumping a
+  traceback; the interrupted session never reaches `history.log_attempt`.
+  2 new tests in `tests/test_interrupt.py`.
 - `streak` command: shows days practiced this week (Mon–Sun weekly grid), the
   current consecutive-day streak (survives the day until you miss one — it
   isn't zeroed at midnight before you practice), and the best streak so far.

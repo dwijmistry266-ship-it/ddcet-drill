@@ -62,6 +62,8 @@ ddcet-drill subjects
 
 Attempts are logged to `~/.ddcet-drill/history.jsonl` (append-only), which
 powers `stats`, `review`, and `adapt`. Delete the file any time to reset.
+Pressing Ctrl+C during a session exits cleanly (exit code 130) instead of
+dumping a traceback; an interrupted session is never logged.
 
 ## Reading comprehension
 
