@@ -34,7 +34,7 @@ ddcet-drill practice --subject physics -n 10
 # Timed mock: 20 questions, 30 minutes, subjects intermixed
 ddcet-drill mock -n 20 --minutes 30
 
-# Topic-wise accuracy across all your attempts
+# Topic-wise accuracy plus per-subject totals across all your attempts
 ddcet-drill stats
 # Same stats exported as CSV (subject, topic, correct, attempted,
 # accuracy_pct, avg_secs) for tracking in a spreadsheet

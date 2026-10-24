@@ -112,3 +112,48 @@ def test_parser_accepts_csv_flag():
 def test_parser_csv_defaults_to_none():
     args = cli.build_parser().parse_args(["stats"])
     assert args.csv is None
+
+
+def _subject_section(printed):
+    return printed.split("Per-subject totals:")[1]
+
+
+def test_stats_prints_per_subject_aggregates(tmp_path, monkeypatch, capsys):
+    _write_history(tmp_path, monkeypatch, [
+        _entry([_item("Q1", "correct", secs=10.0),
+                _item("Q2", "wrong", secs=20.0)]),
+        _entry([_item("Q3", "correct", secs=30.0,
+                      topic="mechanics")]),
+        _entry([_item("Q4", "correct", subject="maths",
+                      topic="algebra")]),
+    ])
+    assert cli.cmd_stats(_args()) == 0
+    section = _subject_section(capsys.readouterr().out)
+    phys = next(line for line in section.splitlines() if "physics" in line)
+    assert "2/3 correct (67%)" in phys and "20.0s avg" in phys
+    maths = next(line for line in section.splitlines() if "maths" in line)
+    assert "1/1 correct (100%)" in maths and "-" in maths
+
+
+def test_stats_subject_aggregates_exclude_skipped(tmp_path, monkeypatch, capsys):
+    _write_history(tmp_path, monkeypatch, [
+        _entry([_item("Q1", "skipped"), _item("Q2", "wrong")]),
+        _entry([_item("Q3", "skipped", subject="maths",
+                      topic="algebra")]),
+    ])
+    assert cli.cmd_stats(_args()) == 0
+    section = _subject_section(capsys.readouterr().out)
+    phys = next(line for line in section.splitlines() if "physics" in line)
+    assert "0/1 correct (0%)" in phys
+    maths = next(line for line in section.splitlines() if "maths" in line)
+    assert "0/0 correct (-)" in maths
+
+
+def test_accuracy_and_time_by_subject_helpers():
+    entries = [
+        _entry([_item("Q1", "correct", secs=10.0),
+                _item("Q2", "skipped")]),
+        _entry([_item("Q3", "wrong", secs=30.0, topic="mechanics")]),
+    ]
+    assert history.accuracy_by_subject(entries) == {"physics": (1, 2)}
+    assert history.time_by_subject(entries) == {"physics": (40.0, 2)}

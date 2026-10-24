@@ -65,6 +65,25 @@ def accuracy_by_topic(entries):
     return stats
 
 
+def accuracy_by_subject(entries):
+    """Return {subject: (correct, attempted)} across entries.
+
+    Same rules as accuracy_by_topic, summed over a subject's topics:
+    "skipped" verdicts are not attempted and never count as correct.
+    """
+    stats = {}
+    for e in entries:
+        for it in e["items"]:
+            key = it["subject"]
+            c, a = stats.get(key, (0, 0))
+            if it["verdict"] != "skipped":
+                a += 1
+                if it["verdict"] == "correct":
+                    c += 1
+            stats[key] = (c, a)
+    return stats
+
+
 def time_by_topic(entries):
     """Return {(subject, topic): (total_secs, timed_attempts)} across entries.
 
@@ -78,6 +97,24 @@ def time_by_topic(entries):
             if secs is None:
                 continue
             key = (it["subject"], it["topic"])
+            t, n = stats.get(key, (0.0, 0))
+            stats[key] = (t + secs, n + 1)
+    return stats
+
+
+def time_by_subject(entries):
+    """Return {subject: (total_secs, timed_attempts)} across entries.
+
+    Same rules as time_by_topic, summed over a subject's topics: only
+    items carrying "secs" (timed modes) contribute.
+    """
+    stats = {}
+    for e in entries:
+        for it in e["items"]:
+            secs = it.get("secs")
+            if secs is None:
+                continue
+            key = it["subject"]
             t, n = stats.get(key, (0.0, 0))
             stats[key] = (t + secs, n + 1)
     return stats

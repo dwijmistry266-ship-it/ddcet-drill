@@ -169,6 +169,13 @@ def cmd_stats(args):
     for (sub, topic), (c, a) in sorted(history.accuracy_by_topic(entries).items()):
         pct = f"{100 * c / a:.0f}%" if a else "-"
         print(f"  {sub}/{topic:<28} {c}/{a} correct ({pct})")
+    print("\nPer-subject totals:")
+    subject_times = history.time_by_subject(entries)
+    for sub, (c, a) in sorted(history.accuracy_by_subject(entries).items()):
+        pct = f"{100 * c / a:.0f}%" if a else "-"
+        t, n = subject_times.get(sub, (0.0, 0))
+        avg = f"{t / n:.1f}s avg" if n else "-"
+        print(f"  {sub:<28} {c}/{a} correct ({pct})  {avg}")
     slowest = sorted(
         ((k, t / n) for k, (t, n) in history.time_by_topic(entries).items()),
         key=lambda kv: kv[1], reverse=True)[:5]

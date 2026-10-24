@@ -1,6 +1,12 @@
 # Changelog
 
 ## Unreleased
+- `stats` now prints per-subject aggregate rows after the topic rows: each
+  subject's correct/attempted count, accuracy, and average seconds per
+  question over timed attempts ("-" when a subject has no timed data).
+  Backed by `history.accuracy_by_subject()` and `history.time_by_subject()`
+  (same skipped/untimed rules as the topic helpers); the `--csv` export is
+  unchanged. 3 new tests in `tests/test_stats.py`.
 - Graceful Ctrl+C handling: pressing Ctrl+C during a session now exits with
   the conventional code 130 and a one-line message ("Interrupted. If a
   session was in progress, it was not logged.") instead of dumping a
